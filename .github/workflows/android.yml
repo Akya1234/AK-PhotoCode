@@ -40,9 +40,20 @@ jobs:
         env:
           BUILDOZER_ALLOW_ORG_TEST_DOMAIN: "1"
           PYTHONFORANDROID_PREREQUISITES_INSTALL_INTERACTIVE: "0"
-        run: buildozer android release
+        run: |
+          set -o pipefail
+          buildozer android release 2>&1 | tee build.log
 
-      - name: Save Android package
+      - name: Upload complete build log
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: AK-PhotoCode-Build-Log
+          path: build.log
+          if-no-files-found: warn
+
+      - name: Upload Android package
+        if: success()
         uses: actions/upload-artifact@v4
         with:
           name: AK-PhotoCode-Android
