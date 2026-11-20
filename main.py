@@ -1,8 +1,5 @@
 import os, io, json, time, threading
 from datetime import datetime
-from PIL import Image
-import photocode_v5 as engine
-from plyer import filechooser
 
 from kivy.app import App
 from kivy.clock import Clock
@@ -59,6 +56,15 @@ class NeonButton(Button):
 
 
 class PhotoCodeApp(App):
+    # Load the NumPy-based V5 engine only when the user actually creates
+    # or scans a PhotoCode. This keeps native NumPy initialization out of
+    # the Android application startup path.
+    def get_engine(self):
+        if not hasattr(self, "_photocode_engine"):
+            import importlib
+            self._photocode_engine = importlib.import_module("photocode_v5")
+        return self._photocode_engine
+
     def build(self):
         self.title = "AK PhotoCode"
         Window.clearcolor = BG
@@ -76,13 +82,8 @@ class PhotoCodeApp(App):
         self.last_result = ""
 
         self.sm = ScreenManager()
+        self._built_screens = {"home"}
         self.build_home()
-        self.build_create()
-        self.build_scan()
-        self.build_recent()
-        self.build_saved()
-        self.build_settings()
-        self.build_about()
         self.sm.current = "home"
         return self.sm
 
@@ -177,6 +178,21 @@ class PhotoCodeApp(App):
         self.sm.current = "home"
 
     def open_page(self, name):
+        if name not in self._built_screens:
+            builders = {
+                "create": self.build_create,
+                "scan": self.build_scan,
+                "recent": self.build_recent,
+                "saved": self.build_saved,
+                "settings": self.build_settings,
+                "about": self.build_about,
+            }
+            builder = builders.get(name)
+            if builder is None:
+                raise ValueError("Unknown page: " + str(name))
+            builder()
+            self._built_screens.add(name)
+
         self.sm.current = name
         if name == "recent":
             self.refresh_recent()
@@ -247,6 +263,7 @@ class PhotoCodeApp(App):
                 self.show_preview(path, self.scan_image_preview)
 
         try:
+            from plyer import filechooser
             filechooser.open_file(
                 on_selection=selected,
                 filters=["image"]
@@ -255,6 +272,7 @@ class PhotoCodeApp(App):
             self.set_status(purpose, "Gallery error: " + str(e), False)
 
     def load_image(self, path):
+        from PIL import Image
         if path.startswith("content://"):
             from jnius import autoclass, jarray
             Activity = autoclass("org.kivy.android.PythonActivity")
@@ -367,6 +385,7 @@ class PhotoCodeApp(App):
     def generate_worker(self, path, message):
         try:
             source = self.load_image(path)
+            engine = self.get_engine()
             result, byte_count = engine.encode_image(source, message)
             output = io.BytesIO()
             result.save(output, format="JPEG", quality=95)
@@ -550,6 +569,7 @@ class PhotoCodeApp(App):
         start = time.perf_counter()
         try:
             source = self.load_image(path)
+            engine = self.get_engine()
             message = engine.decode_image(source)
             elapsed = time.perf_counter() - start
             Clock.schedule_once(
@@ -650,7 +670,9 @@ class PhotoCodeApp(App):
     def clear_history(self):
         self.history = []
         self.write_json(self.history_file, [])
-        self.refresh_recent()
+        # Refresh only when the lazy-loaded screen exists.
+        if hasattr(self, "recent_body"):
+            self.refresh_recent()
 
     # ---------- SAVED PHOTOCODES ----------
 

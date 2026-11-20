@@ -76,7 +76,7 @@ jobs:
           if-no-files-found: warn
 
       - name: Upload Android package
-        if: success()
+        if: steps.android_build_diagnostics.outcome == \'success\'
         uses: actions/upload-artifact@v4
         with:
           name: AK-PhotoCode-Android
@@ -84,7 +84,7 @@ jobs:
           if-no-files-found: error
 
       - name: Build universal test APK
-        if: success()
+        if: steps.android_build_diagnostics.outcome == \'success\'
         env:
           KEYSTORE_PASSWORD: AKPhotoCodeTemp2026
         run: |
@@ -98,7 +98,7 @@ jobs:
           test -s bin/AK-PhotoCode-universal.apk
 
       - name: Upload universal APK
-        if: success()
+        if: steps.android_build_diagnostics.outcome == \'success\'
         uses: actions/upload-artifact@v4
         with:
           name: AK-PhotoCode-Universal-APK
