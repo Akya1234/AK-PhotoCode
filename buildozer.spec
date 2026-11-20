@@ -1,5 +1,5 @@
 [app]
-title = AK's PhotoCode
+title = AK PhotoCode
 package.name = akphotocode
 package.domain = com.akyasir
 source.dir = .
