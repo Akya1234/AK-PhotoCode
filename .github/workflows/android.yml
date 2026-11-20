@@ -51,9 +51,9 @@ jobs:
         run: |
           {
             echo "========== GENERATED STRINGS.XML =========="
-            find .buildozer -type f -path '*/res/values/strings.xml' -print -exec nl -ba {} \\;
+            find .buildozer -type f -path "*/res/values/strings.xml" -print | while IFS= read -r f; do echo "FILE: $f"; nl -ba "$f"; done
             echo "========== ANDROID MANIFESTS =========="
-            find .buildozer -type f -name AndroidManifest.xml -print -exec sed -n '1,120p' {} \\;
+            find .buildozer -type f -name AndroidManifest.xml -print | while IFS= read -r f; do echo "FILE: $f"; sed -n "1,120p" "$f"; done
             echo "========== RESOURCE ERROR REFERENCES =========="
             grep -RniE 'Invalid unicode escape|Failed to flatten XML|app_name|AAPT:' .buildozer 2>/dev/null | tail -100 || true
           } > android-resource-diagnostics.txt 2>&1
