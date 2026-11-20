@@ -1,19 +1,54 @@
 import os, io, json, time, threading
 from datetime import datetime
 
+
+def _ak_trace(stage):
+    try:
+        os.write(2, ("AKPC_TRACE:" + stage + "\n").encode())
+    except Exception:
+        pass
+
+_ak_trace("PYTHON_ENTRY_REACHED")
+
+_ak_trace("BEFORE_1_4")
 from kivy.app import App
+_ak_trace("AFTER_1_4")
+_ak_trace("BEFORE_2_5")
 from kivy.clock import Clock
+_ak_trace("AFTER_2_5")
+_ak_trace("BEFORE_3_6")
 from kivy.metrics import dp, sp
+_ak_trace("AFTER_3_6")
+_ak_trace("BEFORE_4_7")
 from kivy.core.window import Window
+_ak_trace("AFTER_4_7")
+_ak_trace("BEFORE_5_8")
 from kivy.uix.screenmanager import ScreenManager, Screen
+_ak_trace("AFTER_5_8")
+_ak_trace("BEFORE_6_9")
 from kivy.uix.boxlayout import BoxLayout
+_ak_trace("AFTER_6_9")
+_ak_trace("BEFORE_7_10")
 from kivy.uix.gridlayout import GridLayout
+_ak_trace("AFTER_7_10")
+_ak_trace("BEFORE_8_11")
 from kivy.uix.scrollview import ScrollView
+_ak_trace("AFTER_8_11")
+_ak_trace("BEFORE_9_12")
 from kivy.uix.label import Label
+_ak_trace("AFTER_9_12")
+_ak_trace("BEFORE_10_13")
 from kivy.uix.button import Button
+_ak_trace("AFTER_10_13")
+_ak_trace("BEFORE_11_14")
 from kivy.uix.textinput import TextInput
+_ak_trace("AFTER_11_14")
+_ak_trace("BEFORE_12_15")
 from kivy.uix.image import Image as KivyImage
+_ak_trace("AFTER_12_15")
+_ak_trace("BEFORE_13_16")
 from kivy.graphics import Color, RoundedRectangle, Line
+_ak_trace("AFTER_13_16")
 
 BG = (0.008, 0.018, 0.043, 1)
 PANEL = (0.018, 0.065, 0.11, 1)
