@@ -9,7 +9,7 @@ requirements = python3,kivy==2.3.2,pillow,numpy,plyer,pyjnius
 orientation = portrait
 fullscreen = 0
 
-android.permissions = READ_MEDIA_IMAGES
+android.permissions = READ_MEDIA_IMAGES,READ_EXTERNAL_STORAGE,WRITE_EXTERNAL_STORAGE
 android.api = 36
 android.minapi = 24
 android.ndk = 28c
