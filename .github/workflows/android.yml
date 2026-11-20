@@ -37,6 +37,8 @@ jobs:
           pip install buildozer
 
       - name: Build Android App Bundle
+        id: android_build_diagnostics
+        continue-on-error: true
         env:
           BUILDOZER_ALLOW_ORG_TEST_DOMAIN: "1"
           PYTHONFORANDROID_PREREQUISITES_INSTALL_INTERACTIVE: "0"
@@ -44,6 +46,27 @@ jobs:
           set -o pipefail
           buildozer android release 2>&1 | tee build.log
 
+      - name: Capture generated Android resources
+        if: always()
+        run: |
+          {
+            echo "========== GENERATED STRINGS.XML =========="
+            find .buildozer -type f -path '*/res/values/strings.xml' -print -exec nl -ba {} \\;
+            echo "========== ANDROID MANIFESTS =========="
+            find .buildozer -type f -name AndroidManifest.xml -print -exec sed -n '1,120p' {} \\;
+            echo "========== RESOURCE ERROR REFERENCES =========="
+            grep -RniE 'Invalid unicode escape|Failed to flatten XML|app_name|AAPT:' .buildozer 2>/dev/null | tail -100 || true
+          } > android-resource-diagnostics.txt 2>&1
+      - name: Upload Android resource diagnostics
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: AK-PhotoCode-Resource-Diagnostics
+          if-no-files-found: warn
+          path: |
+            android-resource-diagnostics.txt
+            .buildozer/**/res/values/strings.xml
+            .buildozer/**/AndroidManifest.xml
       - name: Upload complete build log
         if: always()
         uses: actions/upload-artifact@v4
@@ -81,3 +104,6 @@ jobs:
           name: AK-PhotoCode-Universal-APK
           path: bin/AK-PhotoCode-universal.apk
           if-no-files-found: error
+      - name: Report Android build failure
+        if: steps.android_build_diagnostics.outcome == 'failure'
+        run: exit 1
