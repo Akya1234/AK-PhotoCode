@@ -50,6 +50,23 @@ _ak_trace("BEFORE_13_16")
 from kivy.graphics import Color, RoundedRectangle, Line
 _ak_trace("AFTER_13_16")
 
+# Native Android logging is initialized only after all Kivy imports.
+_AK_ANDROID_LOG = None
+try:
+    from jnius import autoclass
+    _AK_ANDROID_LOG = autoclass("android.util.Log")
+    _AK_ANDROID_LOG.i("AKPhotoCode", "AKPC_NATIVE_TRACE_READY")
+except Exception:
+    _AK_ANDROID_LOG = None
+
+def _ak_native_trace(stage):
+    try:
+        if _AK_ANDROID_LOG is not None:
+            _AK_ANDROID_LOG.i("AKPhotoCode", "AKPC_TRACE:" + str(stage))
+    except Exception:
+        pass
+
+
 BG = (0.008, 0.018, 0.043, 1)
 PANEL = (0.018, 0.065, 0.11, 1)
 PANEL2 = (0.025, 0.105, 0.17, 1)
@@ -101,12 +118,17 @@ class PhotoCodeApp(App):
         return self._photocode_engine
 
     def build(self):
+        _ak_native_trace("BUILD_ENTERED")
         self.title = "AK PhotoCode"
+        _ak_native_trace("BEFORE_WINDOW")
         Window.clearcolor = BG
+        _ak_native_trace("AFTER_WINDOW")
 
         self.history_file = os.path.join(self.user_data_dir, "activity.json")
         self.saved_file = os.path.join(self.user_data_dir, "saved.json")
+        _ak_native_trace("BEFORE_STORAGE")
         os.makedirs(self.user_data_dir, exist_ok=True)
+        _ak_native_trace("AFTER_STORAGE")
 
         self.history = self.load_json(self.history_file, [])
         self.saved = self.load_json(self.saved_file, [])
@@ -116,10 +138,15 @@ class PhotoCodeApp(App):
         self.last_saved_path = None
         self.last_result = ""
 
+        _ak_native_trace("BEFORE_SCREENMANAGER")
         self.sm = ScreenManager()
+        _ak_native_trace("AFTER_SCREENMANAGER")
         self._built_screens = {"home"}
+        _ak_native_trace("BEFORE_BUILD_HOME")
         self.build_home()
+        _ak_native_trace("AFTER_BUILD_HOME")
         self.sm.current = "home"
+        _ak_native_trace("BUILD_COMPLETE")
         return self.sm
 
     # ---------- STORAGE AND HISTORY ----------
