@@ -2,6 +2,8 @@ import os
 from PIL import Image
 import photocode_v5 as engine
 from plyer import filechooser
+from threading import Thread
+from kivy.clock import Clock
 
 from kivy.app import App
 from kivy.uix.boxlayout import BoxLayout
@@ -16,6 +18,7 @@ class PhotoCodeApp(App):
 
     def build(self):
         self.image_path = None
+        self.scan_running = False
 
         root = BoxLayout(
             orientation="vertical",
@@ -104,33 +107,52 @@ class PhotoCodeApp(App):
         self.result.text = "Ready to scan!"
 
     def scan_image(self, instance):
-        if not self.image_path:
+        if not self.image_path or self.scan_running:
             return
 
+        self.scan_running = True
+        self.scan_button.disabled = True
         self.status.text = "Scanning photograph..."
         self.result.text = "Please wait..."
 
+        Thread(
+            target=self._scan_worker,
+            args=(self.image_path,),
+            daemon=True
+        ).start()
+
+    def _scan_worker(self, path):
+        message = None
+        error = None
+
         try:
-            with Image.open(self.image_path) as img:
+            with Image.open(path) as img:
                 img.load()
                 message = engine.decode_image(img)
+        except Exception as exc:
+            error = str(exc)
 
-            if message is None:
-                self.result.text = "No valid PhotoCode found."
-            else:
-                if isinstance(message, bytes):
-                    message = message.decode(
-                        "utf-8", errors="replace"
-                    )
+        Clock.schedule_once(
+            lambda dt: self._scan_finished(message, error), 0
+        )
 
-                self.result.text = (
-                    "[b]DECODED MESSAGE[/b]\n\n" + message
-                )
-                self.result.markup = True
-                self.status.text = "PhotoCode successfully scanned!"
+    def _scan_finished(self, message, error):
+        self.scan_running = False
+        self.scan_button.disabled = False
+        self.result.markup = False
 
-        except Exception as error:
-            self.result.text = "Scan error: " + str(error)
+        if error:
+            self.result.text = "Scan error: " + error
+            self.status.text = "Scanning failed."
+        elif message is None:
+            self.result.text = "No valid PhotoCode found."
+            self.status.text = "Scan completed."
+        else:
+            if isinstance(message, bytes):
+                message = message.decode("utf-8", errors="replace")
+
+            self.result.text = "DECODED MESSAGE\\n\\n" + message
+            self.status.text = "PhotoCode successfully scanned!"
 
     def reset(self, instance):
         self.image_path = None
